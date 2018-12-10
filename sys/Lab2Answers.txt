@@ -1,0 +1,57 @@
+Q1: 1. Priority inheritance is one approach to address this issue. Please give another approach and briefly describe its idea.
+
+Ans:In order to deal with the priority inversion problem, random boosting technique can be used. The process which is holding a lock and is in critical section, its priority can be increased by a random value. 
+
+With the increased values of priorities, if the priority of lock holding process is higher than maximum priority of waiting process then the solution will work similar to
+ priority inheritance solution. Even if it is not more than the highest priority, still the process holding the lock will definitely finish faster. Random boosting also needs lesser computation than calculating the highest priority among all the waiting processes which is one of the advantages of this approach . Windows Operating Systems use this technique.
+
+    2. Design a test case to show that your approach can address the priority inversion  problem. 
+
+OUTPUT: 
+
+Testing priority inheritance with PA2 implementation
+W started
+W enters critical section
+M started
+R started
+W done, pprio=50 releasing locks
+M done, pprio=40
+
+
+Testing XINU lock implementation
+W started
+W enters critical section
+M started
+R started
+M done, pprio=40
+W done, pprio=30 releasing locks
+R enters critical section
+R done, pprio=50 releasing locks
+Task1 done!
+
+
+Explanation:
+A lock and a semaphore is created.
+Writer 1 gets created with priority 30, lock priority 20 and is resumed and acquires the lock. Another reader with priority 50 and lock priority 10 is also created. Also one more process with priority 40 is created and it does not acquire any lock. 
+The medium priority process with priority 40 is now resumed.
+As soon as that happens it preempts the writer1.
+Now Reader 1 is resumed. It tries to acquire the lock and gets blocked as its lock priority is less.
+
+
+In the case of semaphore implementation of XINU. Medium priority process finishes execution and then the writer 1 finishes. So writer 1 has to wait for the medium priority process to finish and then it can release the lock. 
+
+In the case of locks, writer 1 inherits the priority of the other waiting reader which is 50 as soon as reader 1 gets blocked. Therefore the writer 1 preempts medium priority process and finishes first, releases the lock and then medium priority one finishes.
+
+
+
+
+Q2: Synchronization is a quite complex issue in operating systems. To show your understanding about process synchronization, you are asked to point out a reader/writer synchronization issue in this pesudo-code: task2_sync_issue.c. Multiple reader threads can execute this code concurrently by calling do_update. All the variables starting with global_ are global variables. You are asked to describe the potential issue caused by the incorrect synchronization and point out at least one possible thread interleaving that would trigger the problem. Put your answer in Lab2Answers.txt mentioned above.
+
+Ans: The potential issue that will occur in this implementation of semaphores is the data corruption and race conditions because of some specific interleaving of threads. The shared resource here is the buffer length. It can be modified by 10 readers at a time. This is the main issue with this implementation. Both the readers can change the buffer and its length at the same time. The following scenario of interleaving will cause potential issues.
+
+Scenario:
+
+Reader 1 and Reader 2 have acquired the semaphore.
+Reader 1 is executiing in current state and Reader 2 is in ready queue. 
+Because of some scheduling mechanism, after the Reader1 has done memcpy(buf->buf + buf -> len,txt,size), it may get context switched with Reader 2. 
+Now reader 1 could not increment the buf->len and now Reader 2 will over write the data where Reader 1's data was supposed to be.
